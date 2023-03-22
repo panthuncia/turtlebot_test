@@ -9,6 +9,7 @@
 //math defines
 #define PI 3.14159265358979323846
 #define TWO_PI 6.28318530717958647693
+#define HALF_PI 1.57079632679489661923
 
 //bot defines
 #define BURGER_MAX_LIN_VEL 0.22
@@ -63,17 +64,28 @@ void driveToPoint(double target_x, double target_y)
     tf::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    // calculate v and w
+    // calculate w and v, swapping directions if necessary to allow backwards pathing
+    double w = getRotationToPoint(yaw, x, y, target_x, target_y) * KW;
+    bool setBackAsFront = false;
+    if(w<-HALF_PI){
+      w=PI+w;
+      setBackAsFront = true;
+    } else if(w>HALF_PI){
+      w=-PI+w;
+      setBackAsFront = true;
+    }
+    if (w > BURGER_MAX_ANG_VEL)
+    {
+        w = BURGER_MAX_ANG_VEL;
+    }
     double dist = sqrt(pow(x - target_x, 2) + pow(y - target_y, 2));
     double v = dist * KV;
     if (v > BURGER_MAX_LIN_VEL)
     {
         v = BURGER_MAX_LIN_VEL;
     }
-    double w = getRotationToPoint(yaw, x, y, target_x, target_y) * KW;
-    if (w > BURGER_MAX_ANG_VEL)
-    {
-        w = BURGER_MAX_ANG_VEL;
+    if(setBackAsFront){
+      v=-v;
     }
     geometry_msgs::Twist twist = {};
     twist.linear.x = v;
