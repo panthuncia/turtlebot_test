@@ -20,7 +20,7 @@ nav_msgs::Odometry currentPose;
 Linkedlist<MapPoint*> currentPath;
 void drawRedPoint(MapPoint* current){
     visualization_msgs::Marker marker;
-        marker.header.frame_id = "base_link";
+        marker.header.frame_id = "odom";
         marker.header.stamp = ros::Time();
         marker.id = 0;
         marker.type = visualization_msgs::Marker::SPHERE;
@@ -44,7 +44,7 @@ void drawRedPoint(MapPoint* current){
 }
 void drawGreenPoint(MapPoint* current){
     visualization_msgs::Marker marker;
-        marker.header.frame_id = "base_link";
+        marker.header.frame_id = "odom";
         marker.header.stamp = ros::Time();
         marker.id = 0;
         marker.type = visualization_msgs::Marker::SPHERE;
@@ -75,6 +75,7 @@ void mappingCallback(const nav_msgs::OccupancyGrid::ConstPtr& input){
     // ROS_INFO("Map rotation: %f", yaw);
     memcpy(&currentMap, input.get(), sizeof(nav_msgs::OccupancyGrid));
     const Map *map = Map::GetInstance(input);
+    //update current goal pointer to reflect map changes
 }
 void odometryCallback(const nav_msgs::Odometry::ConstPtr& input)
 {
@@ -84,7 +85,7 @@ void publishMarkers(){
     for(int i=0; i<currentPath.length; i++){
         MapPoint* current = currentPath.get(i)->data;
         visualization_msgs::Marker marker;
-        marker.header.frame_id = "base_link";
+        marker.header.frame_id = "odom";
         marker.header.stamp = ros::Time();
         marker.id = 0;
         marker.type = visualization_msgs::Marker::SPHERE;
@@ -185,13 +186,13 @@ void setAndFindPath(Map* map){
 void clickCallback(const geometry_msgs::PointStamped::ConstPtr& input){
     double target_x = input.get()->point.x;
     double target_y = input.get()->point.y;
-    //turtlebot_test::NAV_GOAL goal;
-    //goal.x = target_x;
-    //goal.y=target_y;
-    //pub.publish(goal);
-    Map* map = Map::GetInstance();
-    current_goal = map->getClosest(target_x, target_y);
-    setAndFindPath(map);
+    turtlebot_test::NAV_GOAL goal;
+    goal.x = target_x;
+    goal.y=target_y;
+    pub.publish(goal);
+    //Map* map = Map::GetInstance();
+    //current_goal = map->getClosest(target_x, target_y);
+    //setAndFindPath(map);
 }
 int main(int argc, char **argv)
 {

@@ -40,17 +40,9 @@ double makeSimpleProfile(double output, double input, double slop){
   }
   return output;
 }
-double keepInRange(double theta)
-{
-  while (theta < 0)
-  {
-    theta += TWO_PI;
-  }
-  while (theta >= TWO_PI)
-  {
-    theta -= TWO_PI;
-  }
-  return theta;
+double normalRelativeAngle(double angle) {
+    angle = fmod(angle, TWO_PI);
+		return angle >= 0 ? (angle < PI) ? angle : angle - TWO_PI : (angle >= -PI) ? angle : angle + TWO_PI;
 }
 double getRotationToPoint(double current_theta, double current_x, double current_y, double target_x, double target_y)
 {
@@ -58,23 +50,9 @@ double getRotationToPoint(double current_theta, double current_x, double current
   double x_diff = target_x - current_x;
   double y_diff = target_y - current_y;
 
-  double theta_to_target = atan(y_diff / x_diff); // returns in range (-pi/2, pi/2)
-
-  // corrects for limited atan range
-  if (x_diff < 0)
-  {
-    theta_to_target += PI; // now in range (-pi/2, 3pi/2), covers full rotation
-  }
-
-  double difference = keepInRange(theta_to_target - current_theta); // gets difference and corrects to range [0, 2pi)
-
-  // corrects >180 degree turns to negative turns
-  if (difference > PI)
-  {
-    difference -= TWO_PI; // now in range (-pi/2, pi/2]
-  }
-
-  return difference;
+  double theta_to_target = atan2(y_diff, x_diff); // returns in range (-pi/2, pi/2)
+  double turn = normalRelativeAngle(theta_to_target-current_theta);
+  return turn;
 }
 void driveToPoint(double target_x, double target_y)
 {

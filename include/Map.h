@@ -33,7 +33,7 @@ private:
 protected:
     Map(const nav_msgs::OccupancyGrid::ConstPtr& value)
     {
-        UpdateMap(value);
+        InitMap(value);
     }
     //destructor frees map memory
     ~Map() {
@@ -103,7 +103,7 @@ public:
      * Finally, any singleton should define some business logic, which can be
      * executed on its instance.
      */
-    void UpdateMap(const nav_msgs::OccupancyGrid::ConstPtr& value)
+    void InitMap(const nav_msgs::OccupancyGrid::ConstPtr& value)
     {
         //free any existing allocated memory
         for(std::vector<MapPoint*> outer : _map){
@@ -133,6 +133,15 @@ public:
         //init neighbor connections
         initNeighbors();
         ROS_INFO("added neighbors");
+    }
+    //updates occupancy grid
+    //assumes map dimensions are static
+    void UpdateMap(const nav_msgs::OccupancyGrid::ConstPtr& value){
+        for(int i=0; i<X; i++){
+            for(int j=0; j<Y; j++){
+                _map[i][j]->data=getElement(value, i, j);
+            }
+        }
     }
     //TODO this can be optimized
     MapPoint* getClosest(double x, double y){
