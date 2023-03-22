@@ -9,6 +9,7 @@
 #include "Map.h"
 #include <chrono>
 #include <thread>
+#include <mutex>
 
 //globals
 ros::Publisher pub;
@@ -17,6 +18,7 @@ MapPoint* current_goal=nullptr;
 //map data
 nav_msgs::OccupancyGrid currentMap;
 nav_msgs::Odometry currentPose;
+std::mutex path_mutex;
 Linkedlist<MapPoint*> currentPath;
 void drawRedPoint(MapPoint* current){
     visualization_msgs::Marker marker;
@@ -150,7 +152,7 @@ Linkedlist<MapPoint*> findPath(MapPoint* start, MapPoint* end)
                     n->f = tentative_gscore+distance(n->x_index, n->y_index, end->x_index, end->y_index);
                     openSet.remove(n);
                     openSet.emplace(n);
-                    drawRedPoint(n);
+                    //drawRedPoint(n);
                 }
             }
 
@@ -168,31 +170,35 @@ void setAndFindPath(Map* map){
     ROS_INFO("Finding path to point %f, %f from %f, %f", current_goal->x_location, current_goal->y_location, currentPose.pose.pose.position.x, currentPose.pose.pose.position.y);
     map->resetPoints();
     MapPoint* start = map->getClosest(currentPose.pose.pose.position.x, currentPose.pose.pose.position.y);
+    //path_mutex.lock();
     currentPath = findPath(start, current_goal);
     MapPoint* intermediate_nav_target = nullptr;
-    if(currentPath.length>=5){
+    uint8_t target_node_index = 15;
+    if(currentPath.length>=target_node_index){
         intermediate_nav_target = currentPath.get(4)->data;
-    } else if (currentPath.length<5&&currentPath.length>0){
+    } else if (currentPath.length<target_node_index&&currentPath.length>0){
         intermediate_nav_target = currentPath.get(currentPath.length)->data;
     } else{
         ROS_ERROR("Error: Path length is 0!");
+        intermediate_nav_target = start;
     }
+    //path_mutex.unlock();
     turtlebot_test::NAV_GOAL goal;
     goal.x=intermediate_nav_target->x_location;
-    goal.y=intermediate_nav_target->x_location;
-    publishMarkers();
+    goal.y=intermediate_nav_target->y_location;
+    //publishMarkers();
     pub.publish(goal);
 }
 void clickCallback(const geometry_msgs::PointStamped::ConstPtr& input){
     double target_x = input.get()->point.x;
     double target_y = input.get()->point.y;
-    turtlebot_test::NAV_GOAL goal;
-    goal.x = target_x;
-    goal.y=target_y;
-    pub.publish(goal);
-    //Map* map = Map::GetInstance();
-    //current_goal = map->getClosest(target_x, target_y);
-    //setAndFindPath(map);
+    //turtlebot_test::NAV_GOAL goal;
+    //goal.x = target_x;
+    //goal.y=target_y;
+    //pub.publish(goal);
+    Map* map = Map::GetInstance();
+    current_goal = map->getClosest(target_x, target_y);
+    setAndFindPath(map);
 }
 int main(int argc, char **argv)
 {
@@ -205,8 +211,8 @@ int main(int argc, char **argv)
   pub = n.advertise<turtlebot_test::NAV_GOAL>("NAV_GOAL", 1);
   vis_pub = n.advertise<visualization_msgs::Marker>( "/visualization_marker", 0 );
   currentMap = {};
-  //set update rate to 1Hz
-  ros::Rate loop_rate(1);
+  //set update rate to 4Hz
+  ros::Rate loop_rate(4);
   while(ros::ok()){
     Map* map = Map::GetInstance();
     setAndFindPath(map);
