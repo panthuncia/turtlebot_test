@@ -1,0 +1,9 @@
+<launch>
+  <param name="CHASSIS_RADIUS" type="double" value="80.0" />
+  <param name="WHEEL_RADIUS" type="double" value="33.0" />
+  <group ns="main">
+    <node pkg="turtlebot_test" name="fk" type="fk_3002"/>
+    <node pkg="turtlebot_test" name="odom" type="odometry" output="screen"/>
+    <node pkg="turtlebot_test" name="pathplanning" type="pathplanning" output="screen"/>
+  </group>
+</launch>
